@@ -1,38 +1,62 @@
 # DDD
-## ディレクトリ階層(DDD込み)
+## Laravel ディレクトリ階層(DDD込みCQRS込み)
 
-CommandServiceの中で、永続化させるモデルを生成するのがEntity
+### CommandService: 永続化
+永続化処理をまとめるサービス
 
-Entityによって生成されたモデルを永続化するのがRepository
+リポジトリをDIして、Entityの中のModelを引数として渡す。
 
-QueryServiceが非永続化した情報を取得する処理をまとめる。実際に取得するのはRepository。
+#### Entity
+永続化対象(Model)生成器
 
-モデルを表示するだけならばモデルを返すが、複数のモデルと一緒に情報を表示する場合はDtoに集約して表示する
+永続化対象をどんなRequestをもとに生成するか場合によって分かれるため静的関数で自身を生成する。
 
-### Entity
-引数はモデル生成の文字列たち、戻り値はモデル(モデル生成の役割)
+返り値は基本自分自身とし、`getModel`関数で永続化対象を返却する。
 
-Controllerでは呼び出されない。あくまでサービス内でインスタンス化される
+### QueryService: 非永続化(取得)
+非永続化をまとめるサービス
 
-### Dto
-取得したモデルの整形を行う。Dtoにしなくてもモデルを直接返すのも可能。
+リポジトリをDIしてクエリを作成し、必要なレコードの取得を行う。
 
-複数モデルを利用した集約などに利用される。
+取得したレコードはModelになっているのでDtoに引き渡し、返り値をDto、DtoCollectionとする
 
+#### Dto (Data Transfer Object)
 
-Controllerでは呼び出されない。あくまでサービス内でインスタンス化される
-### Service
-引数はリクエスト、中でEntityの生成やRepositoryによるCrudを行う。戻り値はvoidやDto、Model
+引数はModelとする。そのクラス内で必要なレコードの表示内容の変更を行う
+
+- 姓名をまとめてフルネームを取得する関数を作成する
+- 生年月日から年齢を取得する関数を作成する
+
+など。
+
+### Service: DBと関係ないもの
+
+取得したModelを用いた表示内容の変更ならDtoの責務だが、例えばRequestをもとにレコードの存在を確認するか、
+などの永続化・非永続化などに属さない処理をまとめる。
+
+一番処理内容が少ないことが望ましい。
 
 ### Repository
-Controllerでは呼ばないようにする。必ずサービスの中で。
 
+- 渡されたデータを保存する
+- 渡されたIDを削除する
+- データ取得のためのビルダを提供する
+
+のみを役割とする。
+
+Controllerの中で呼ばないこと。DIをするのはサービス内でのみとする。
+
+### 注意
+
+Serviceの中でCommandServiceやQueryServiceを呼び、その中でServiceを再帰的に呼んでしまうと500になる。
+
+### ディレクトリ構造
 ```
 docker/                       Dockerコンテナ群
 src/
    ├─ app/                    メインコード
    │   ├─ Actions
-   │   │   └─ Commands/       Fortify(Fortify認証 カスタマイズ用)
+   │   │   └─ Commands/       Fortify(Fortify認証 カスタマイズ用 Laravel8-)
    │   ├─ Console/
    │   │   └─ Commands/       コマンド (Laravel標準)
    │   │
